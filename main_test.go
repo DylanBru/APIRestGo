@@ -8,26 +8,14 @@ import (
 	"testing"
 )
 
-// --------------Vérifie si l'appel à l'endpoint /api/v1/videos renvoie statut 200--------------//
-func TestVideoHandler(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(videoHandler))
-	resp, err := http.Get(server.URL)
-	if err != nil {
-		t.Error(err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("excpected 200 but got %d", resp.StatusCode)
-	}
-}
-
 func TestListVideos(t *testing.T) {
-	req, err := http.NewRequest("GET", "/api/v1/videos", nil)
+	req, err := http.NewRequest("GET", "/api/v2/videos", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Enregistre la réponse http pour le test
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(videoHandler)
+	handler := http.HandlerFunc(ListVideos)
 	handler.ServeHTTP(rr, req)
 	// Vérification du code de statut de la réponse
 	if rr.Code != http.StatusOK {
@@ -45,13 +33,13 @@ func TestListVideos(t *testing.T) {
 }
 
 func TestGetVideo(t *testing.T) {
-	req, err := http.NewRequest("GET", "/api/v1/videos/2", nil)
+	req, err := http.NewRequest("GET", "/api/v2/videos/2", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Enregistre la réponse http pour le test
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(videoHandler)
+	handler := http.HandlerFunc(GetVideo)
 	handler.ServeHTTP(rr, req)
 	// Vérification du code de statut de la réponse
 	if rr.Code != http.StatusOK {
@@ -69,77 +57,54 @@ func TestGetVideo(t *testing.T) {
 }
 
 func TestCreateVideo(t *testing.T) {
-	expected := video{ID: "4", Title: "Le quatrième", Author: "Dylan Bru", PublishedDate: "2024-02-22"}
-	requestBody := `{"id": "4", "title": "Le quatrième", "author": "Dylan Bru", "publishedDate": "2024-02-22"}`
-	req, err := http.NewRequest("POST", "/api/v1/videos", strings.NewReader(requestBody))
+	expected := Video{ID: "4", Title: "Le quatrième", Author: "Dylan Bru", PublishedDate: "2024-02-22", IsActive: true, DeletedAt: ""}
+	requestBody := `{"title": "Le quatrième", "author": "Dylan Bru", "publishedDate": "2024-02-22"}`
+	req, err := http.NewRequest("POST", "/api/v2/videos", strings.NewReader(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(videoHandler)
+	handler := http.HandlerFunc(CreateVideo)
 	handler.ServeHTTP(rr, req)
 	// Vérification du code de statut de la réponse
 	if rr.Code != http.StatusCreated {
 		t.Errorf("expected status Created; got %d", rr.Code)
 	}
-	// Récupérer la liste des vidéos à jour
-	reqGet, er := http.NewRequest("GET", "/api/v1/videos", nil)
-	if er != nil {
-		t.Fatal(er)
-	}
-	reqGetRecorder := httptest.NewRecorder()
-	handler.ServeHTTP(reqGetRecorder, reqGet)
-	// Vérification si la vidéo ajoutée correspond aux données attendues
-	var videosResponse []video
-	if e := json.Unmarshal(reqGetRecorder.Body.Bytes(), &videosResponse); e != nil {
-		t.Fatal(e)
-	}
+	// Vérification si la vidéo créée est dans la liste des vidéos
 	found := false
-	for _, v := range videosResponse {
-		if v.ID == expected.ID && v.Title == expected.Title && v.Author == expected.Author && v.PublishedDate == expected.PublishedDate {
+	for _, v := range videos {
+		if v.ID == expected.ID && v.Title == expected.Title && v.Author == expected.Author && v.PublishedDate == expected.PublishedDate && v.IsActive == expected.IsActive && v.DeletedAt == expected.DeletedAt {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Errorf("expected video %+v not found in response body: %v", expected, videosResponse)
+		t.Errorf("expected video %+v not found in response body: %v", expected, videos)
 	}
 }
 
 func TestDeleteVideo(t *testing.T) {
-	deleteExpected := videos[1]
-	req, err := http.NewRequest("DELETE", "/api/v1/videos/2", nil)
+	req, err := http.NewRequest("DELETE", "/api/v2/videos/2", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(videoHandler)
+	handler := http.HandlerFunc(DeleteVideo)
 	handler.ServeHTTP(rr, req)
 	// Vérification du code de statut de la réponse
 	if rr.Code != http.StatusOK {
 		t.Errorf("expected status Created; got %d", rr.Code)
 	}
-	// Récupérer la liste des vidéos à jour
-	reqGet, er := http.NewRequest("GET", "/api/v1/videos", nil)
-	if er != nil {
-		t.Fatal(er)
-	}
-	reqGetRecorder := httptest.NewRecorder()
-	handler.ServeHTTP(reqGetRecorder, reqGet)
-	// Vérification si la vidéo a bien été supprimée
-	var videosResponse []video
-	if e := json.Unmarshal(reqGetRecorder.Body.Bytes(), &videosResponse); e != nil {
-		t.Fatal(e)
-	}
+	// Vérification si les données de la vidéo ont bien été supprimées de la liste des vidéos
 	found := false
-	for _, v := range videosResponse {
-		if v.ID == deleteExpected.ID && v.Title == deleteExpected.Title && v.Author == deleteExpected.Author && v.PublishedDate == deleteExpected.PublishedDate {
+	for _, v := range videos {
+		if v.ID == "2" && v.Title == "" && v.Author == "" && v.PublishedDate == "" && v.IsActive == false && v.DeletedAt != "" {
 			found = true
 			break
 		}
 	}
-	if found {
-		t.Errorf("video %+v found in response body: %v, expected : not found", deleteExpected, videosResponse)
+	if !found {
+		t.Error("vDeleted video not found")
 	}
 }
