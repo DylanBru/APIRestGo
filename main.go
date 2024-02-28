@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 //--------------AMELIORATIONS--------------//
@@ -29,12 +30,14 @@ type Video struct {
 	Title         string `json:"title"`
 	Author        string `json:"author"`
 	PublishedDate string `json:"publishedDate"`
+	IsActive      bool   `json:"isActive"`
+	DeletedAt     string `json:"deletedAt"`
 }
 
 var videos = []Video{
-	{ID: "1", Title: "Voyage Culinaire", Author: "Sophie Dubois", PublishedDate: "2023-06-15"},
-	{ID: "2", Title: "Le Chemin de l'Aventure", Author: "Thomas Leduc", PublishedDate: "2021-03-05"},
-	{ID: "3", Title: "Exploration : Mars", Author: "Mariel Lefèvre", PublishedDate: "2020-06-01"},
+	{ID: "1", Title: "Voyage Culinaire", Author: "Sophie Dubois", PublishedDate: "2023-06-15", IsActive: true, DeletedAt: ""},
+	{ID: "2", Title: "Le Chemin de l'Aventure", Author: "Thomas Leduc", PublishedDate: "2021-03-05", IsActive: true, DeletedAt: ""},
+	{ID: "3", Title: "Exploration : Mars", Author: "Mariel Lefèvre", PublishedDate: "2020-06-01", IsActive: true, DeletedAt: ""},
 }
 
 //--------------CONTROLLER--------------//
@@ -104,8 +107,15 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Video not found", http.StatusNotFound)
 		return
 	}
-	// Supprimer la vidéo du slice : méthode qui garde l'ordre
-	videos = append(videos[:index], videos[index+1:]...)
+	// Supprimer les éléments de la vidéo ciblée
+	now := time.Now().Format("2006-01-02")
+	videos[index].Title = ""
+	videos[index].Author = ""
+	videos[index].PublishedDate = ""
+	videos[index].IsActive = false
+	videos[index].DeletedAt = now
+
+	// videos = append(videos[:index], videos[index+1:]...)
 	w.WriteHeader(http.StatusOK)
 }
 
