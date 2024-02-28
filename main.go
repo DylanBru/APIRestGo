@@ -20,7 +20,7 @@ import (
 //--------------REQUEST--------------//
 
 // GET : curl -X GET http://localhost:8000/api/v2/videos
-// POST : curl -X POST -H 'content-type: application/json' --data '{"id" : "4", "title": "Le quatrième", "author": "Dylan Bru", "publishedDate": "2024-02-22"}' http://localhost:8000/api/v2/videos
+// POST : curl -X POST -H 'content-type: application/json' --data '{"title": "Le quatrième", "author": "Dylan Bru", "publishedDate": "2024-02-22"}' http://localhost:8000/api/v2/videos
 // DELETE : curl -X DELETE http://localhost:8000/api/v2/videos/3
 
 //--------------BDD--------------//
@@ -82,6 +82,7 @@ func CreateVideo(w http.ResponseWriter, r *http.Request) {
 	}
 	// Auto-incrémentation de l'id unique
 	newVideo.ID = strconv.Itoa(len(videos) + 1)
+	newVideo.IsActive = true
 	videos = append(videos, newVideo)
 	w.WriteHeader(http.StatusCreated)
 }
