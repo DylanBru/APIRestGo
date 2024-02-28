@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -17,20 +18,20 @@ import (
 
 //--------------REQUEST--------------//
 
-// GET : curl -X GET http://localhost:8000/api/v2/videos/
+// GET : curl -X GET http://localhost:8000/api/v2/videos
 // POST : curl -X POST -H 'content-type: application/json' --data '{"id" : "4", "title": "Le quatrième", "author": "Dylan Bru", "publishedDate": "2024-02-22"}' http://localhost:8000/api/v2/videos
 // DELETE : curl -X DELETE http://localhost:8000/api/v2/videos/3
 
 //--------------BDD--------------//
 
-type video struct {
+type Video struct {
 	ID            string `json:"id"`
 	Title         string `json:"title"`
 	Author        string `json:"author"`
 	PublishedDate string `json:"publishedDate"`
 }
 
-var videos = []video{
+var videos = []Video{
 	{ID: "1", Title: "Voyage Culinaire", Author: "Sophie Dubois", PublishedDate: "2023-06-15"},
 	{ID: "2", Title: "Le Chemin de l'Aventure", Author: "Thomas Leduc", PublishedDate: "2021-03-05"},
 	{ID: "3", Title: "Exploration : Mars", Author: "Mariel Lefèvre", PublishedDate: "2020-06-01"},
@@ -69,20 +70,15 @@ func GetVideo(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateVideo(w http.ResponseWriter, r *http.Request) {
-	var newVideo video
+	var newVideo Video
 	// Erreur si le corps de la requête n'est pas conforme à la structure de video
 	err := json.NewDecoder(r.Body).Decode(&newVideo)
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	// Vérifications pour l'id unique
-	for _, v := range videos {
-		if v.ID == newVideo.ID {
-			http.Error(w, "ID already exists", http.StatusConflict)
-			return
-		}
-	}
+	// Auto-incrémentation de l'id unique
+	newVideo.ID = strconv.Itoa(len(videos) + 1)
 	videos = append(videos, newVideo)
 	w.WriteHeader(http.StatusCreated)
 }
